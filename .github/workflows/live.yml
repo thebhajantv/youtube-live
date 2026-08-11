@@ -13,6 +13,7 @@ jobs:
     timeout-minutes: 350
 
     steps:
+
       - name: Install dependencies
         run: |
           sudo apt-get update
@@ -21,13 +22,14 @@ jobs:
 
       - name: Download video from Google Drive
         run: |
-          gdown "https://drive.google.com/uc?id=1uA4Iqh0gI0E5E6grMqe64p8Vizuy2n5ky" -O video.mp4
+          gdown "YOUR_EXISTING_GOOGLE_DRIVE_URL" -O video.mp4
 
       - name: Start YouTube Live
+        continue-on-error: true
         env:
           STREAM_KEY: ${{ secrets.YOUTUBE_STREAM_KEY }}
         run: |
-          timeout 335m ffmpeg -re -stream_loop -1 -i video.mp4 \
+          timeout 330m ffmpeg -re -stream_loop -1 -i video.mp4 \
             -c:v libx264 \
             -preset veryfast \
             -b:v 4500k \
@@ -39,10 +41,12 @@ jobs:
             -b:a 128k \
             -ar 44100 \
             -f flv \
-            "rtmp://a.rtmp.youtube.com/live2/$STREAM_KEY" || true
+            "rtmp://a.rtmp.youtube.com/live2/$STREAM_KEY"
 
       - name: Automatically restart workflow
+        if: always()
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          sleep 10
           gh workflow run live.yml --ref main
