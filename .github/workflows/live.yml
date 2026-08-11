@@ -22,7 +22,7 @@ jobs:
 
       - name: Download video from Google Drive
         run: |
-          gdown "YOUR_EXISTING_GOOGLE_DRIVE_URL" -O video.mp4
+          gdown "https://drive.google.com/uc?id=1Ua4lhQgIo65Eg6rMqE64p8Vizuy2n5ky" -O video.mp4
 
       - name: Start YouTube Live
         continue-on-error: true
