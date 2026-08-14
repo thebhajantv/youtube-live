@@ -10,7 +10,7 @@ permissions:
 jobs:
   stream:
     runs-on: ubuntu-latest
-    timeout-minutes: 340
+    timeout-minutes: 350
 
     steps:
       - name: Install dependencies
@@ -19,24 +19,17 @@ jobs:
           sudo apt-get install -y ffmpeg python3-pip
           pip3 install gdown
 
-      - name: Download Maha Mrityunjay
-        run: |
-          gdown "https://drive.google.com/uc?id=1Ua4lhQgIo65Eg6rMqE64p8Vizuy2n5ky" -O maha.mp4
-
       - name: Download Radhe Radhe
         run: |
-          gdown "https://drive.google.com/uc?id=1VhucZPDtSaSO1U15Ar3bjUm5crQHujDM" -O radhe.mp4
-
-      - name: Create playlist
-        run: |
-          printf "file 'maha.mp4'\nfile 'radhe.mp4'\n" > playlist.txt
+          gdown "https://drive.google.com/uc?id=1VhucZPDtSaSO1U15Ar3bjUm5crQHujDM" -O video.mp4
 
       - name: Start YouTube + Facebook Live
         env:
           YOUTUBE_STREAM_KEY: ${{ secrets.YOUTUBE_STREAM_KEY }}
           FACEBOOK_STREAM_KEY: ${{ secrets.FACEBOOK_STREAM_KEY }}
         run: |
-          ffmpeg -re -stream_loop -1 -f concat -safe 0 -i playlist.txt \
+          ffmpeg -re -stream_loop -1 -i video.mp4 \
+            -map 0:v:0 -map 0:a:0 \
             -c:v libx264 \
             -preset veryfast \
             -b:v 4500k \
@@ -47,5 +40,16 @@ jobs:
             -c:a aac \
             -b:a 128k \
             -ar 44100 \
-            -f tee \
-            "[f=flv]rtmps://a.rtmp.youtube.com/live2/$YOUTUBE_STREAM_KEY|[f=flv]rtmps://live-api-s.facebook.com:443/rtmp/$FACEBOOK_STREAM_KEY"
+            -f flv "rtmp://a.rtmp.youtube.com/live2/${YOUTUBE_STREAM_KEY}" \
+            -map 0:v:0 -map 0:a:0 \
+            -c:v libx264 \
+            -preset veryfast \
+            -b:v 4500k \
+            -maxrate 4500k \
+            -bufsize 9000k \
+            -pix_fmt yuv420p \
+            -g 120 \
+            -c:a aac \
+            -b:a 128k \
+            -ar 44100 \
+            -f flv "rtmps://live-api-s.facebook.com:443/rtmp/${FACEBOOK_STREAM_KEY}"
