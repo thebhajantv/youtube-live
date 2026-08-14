@@ -13,22 +13,27 @@ permissions:
 
 jobs:
   restart:
+    # केवल failure या timeout पर automatic restart
+    # manual cancellation पर restart नहीं होगा
+    if: >
+      github.event.workflow_run.conclusion == 'failure' ||
+      github.event.workflow_run.conclusion == 'timed_out'
+
     runs-on: ubuntu-latest
 
     steps:
       - name: Wait before restart
         run: sleep 20
 
-      - name: Start YouTube Live again
+      - name: Start new YouTube Live
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh api \
             --method POST \
             -H "Accept: application/vnd.github+json" \
-            -H "X-GitHub-Api-Version: 2026-03-10" \
             "/repos/${{ github.repository }}/actions/workflows/live.yml/dispatches" \
             -f ref=main
 
-      - name: Restart triggered
-        run: echo "New YouTube Live workflow has been started."
+      - name: Confirm restart
+        run: echo "New YouTube Live workflow triggered successfully."
