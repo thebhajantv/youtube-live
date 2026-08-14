@@ -10,7 +10,7 @@ permissions:
 jobs:
   stream:
     runs-on: ubuntu-latest
-    timeout-minutes: 350
+    timeout-minutes: 340
 
     steps:
       - name: Install dependencies
@@ -19,7 +19,7 @@ jobs:
           sudo apt-get install -y ffmpeg python3-pip
           pip3 install gdown
 
-      - name: Download Maha Mrityunjay Jaap
+      - name: Download Maha Mrityunjay
         run: |
           gdown "https://drive.google.com/uc?id=1Ua4lhQgIo65Eg6rMqE64p8Vizuy2n5ky" -O maha.mp4
 
@@ -31,9 +31,10 @@ jobs:
         run: |
           printf "file 'maha.mp4'\nfile 'radhe.mp4'\n" > playlist.txt
 
-      - name: Start YouTube Live
+      - name: Start YouTube + Facebook Live
         env:
-          STREAM_KEY: ${{ secrets.YOUTUBE_STREAM_KEY }}
+          YOUTUBE_STREAM_KEY: ${{ secrets.YOUTUBE_STREAM_KEY }}
+          FACEBOOK_STREAM_KEY: ${{ secrets.FACEBOOK_STREAM_KEY }}
         run: |
           ffmpeg -re -stream_loop -1 -f concat -safe 0 -i playlist.txt \
             -c:v libx264 \
@@ -46,5 +47,5 @@ jobs:
             -c:a aac \
             -b:a 128k \
             -ar 44100 \
-            -f flv \
-            "rtmp://a.rtmp.youtube.com/live2/$STREAM_KEY"
+            -f tee \
+            "[f=flv]rtmps://a.rtmp.youtube.com/live2/$YOUTUBE_STREAM_KEY|[f=flv]rtmps://live-api-s.facebook.com:443/rtmp/$FACEBOOK_STREAM_KEY"
