@@ -2,7 +2,8 @@ name: Auto Restart YouTube Live
 
 on:
   workflow_run:
-    workflows: ["YouTube Live"]
+    workflows:
+      - "YouTube Live"
     types:
       - completed
 
@@ -12,18 +13,22 @@ permissions:
 
 jobs:
   restart:
-    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
       - name: Wait before restart
-        run: sleep 15
+        run: sleep 20
 
-      - name: Restart YouTube Live
+      - name: Start YouTube Live again
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh workflow run live.yml --ref main
+          gh api \
+            --method POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2026-03-10" \
+            "/repos/${{ github.repository }}/actions/workflows/live.yml/dispatches" \
+            -f ref=main
+
+      - name: Restart triggered
+        run: echo "New YouTube Live workflow has been started."
