@@ -23,13 +23,18 @@ jobs:
         run: |
           gdown "https://drive.google.com/uc?id=1VhucZPDtSaSO1U15Ar3bjUm5crQHujDM" -O video.mp4
 
+      - name: Check video
+        run: |
+          ffprobe -v error -show_entries stream=index,codec_type -of default=noprint_wrappers=1 video.mp4
+
       - name: Start YouTube + Facebook Live
         env:
           YOUTUBE_STREAM_KEY: ${{ secrets.YOUTUBE_STREAM_KEY }}
           FACEBOOK_STREAM_KEY: ${{ secrets.FACEBOOK_STREAM_KEY }}
         run: |
           ffmpeg -re -stream_loop -1 -i video.mp4 \
-            -map 0:v:0 -map 0:a:0 \
+            -map 0:v:0 \
+            -map 0:a:0 \
             -c:v libx264 \
             -preset veryfast \
             -b:v 4500k \
@@ -40,16 +45,7 @@ jobs:
             -c:a aac \
             -b:a 128k \
             -ar 44100 \
-            -f flv "rtmp://a.rtmp.youtube.com/live2/${YOUTUBE_STREAM_KEY}" \
-            -map 0:v:0 -map 0:a:0 \
-            -c:v libx264 \
-            -preset veryfast \
-            -b:v 4500k \
-            -maxrate 4500k \
-            -bufsize 9000k \
-            -pix_fmt yuv420p \
-            -g 120 \
-            -c:a aac \
-            -b:a 128k \
-            -ar 44100 \
-            -f flv "rtmps://live-api-s.facebook.com:443/rtmp/${FACEBOOK_STREAM_KEY}"
+            -flags +global_header \
+            -f tee \
+            -use_fifo 1 \
+            "[f=flv:onfail=ignore]rtmp://a.rtmp.youtube.com/live2/${YOUTUBE_STREAM_KEY}|[f=flv:onfail=ignore]rtmps://live-api-s.facebook.com:443/rtmp/${FACEBOOK_STREAM_KEY}"
