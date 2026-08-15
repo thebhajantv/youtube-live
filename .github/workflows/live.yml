@@ -2,6 +2,10 @@ name: YouTube Live
 
 on:
   workflow_dispatch:
+    inputs:
+      batch:
+        required: true
+        default: "1"
 
 permissions:
   actions: write
@@ -10,67 +14,55 @@ permissions:
 jobs:
   stream:
     runs-on: ubuntu-latest
-    timeout-minutes: 350
+    timeout-minutes: 340
 
     steps:
-      - name: Install dependencies
+      - name: Install
         run: |
           sudo apt-get update
           sudo apt-get install -y ffmpeg python3-pip
           pip3 install gdown
 
-      - name: Download all 10 videos
+      - name: Download Batch 1
+        if: inputs.batch == '1'
         run: |
-          gdown "https://drive.google.com/uc?id=1Ua4lhQgIo65Eg6rMqE64p8Vizuy2n5ky" -O video01.mp4
-          gdown "https://drive.google.com/uc?id=1VhucZPDtSaSO1U15Ar3bjUm5crQHujDM" -O video02.mp4
-          gdown "https://drive.google.com/uc?id=1xvIN1sf6IZV0sKsWgzgLOf3Uo14hxiuZ" -O video03.mp4
-          gdown "https://drive.google.com/uc?id=1pzQdSE5cInpNn30oxxbOXBdPYPESckfE" -O video04.mp4
-          gdown "https://drive.google.com/uc?id=1ktLzDCo8yTuXC1FN4CCv3ORFVKrQ-32L" -O video05.mp4
-          gdown "https://drive.google.com/uc?id=1TZALYEg2FCGjPojNG5jr5JW_OShvoWwX" -O video06.mp4
-          gdown "https://drive.google.com/uc?id=1aUEdDMoB6tmT8-jPy-bSJfFooWV1Pog0" -O video07.mp4
-          gdown "https://drive.google.com/uc?id=1wX8MYiBMVVrVzPPDThMsk4pPL4xFSnNO" -O video08.mp4
-          gdown "https://drive.google.com/uc?id=1DmdhPFhm2Gi5e-CVhuUbq48WI8wEFVbb" -O video09.mp4
-          gdown "https://drive.google.com/uc?id=1PeYA3MxFUw1eEQL4pFhzGsYTRAR95bvo" -O video10.mp4
+          gdown "https://drive.google.com/uc?id=1Ua4lhQgIo65Eg6rMqE64p8Vizuy2n5ky" -O 01.mp4
+          gdown "https://drive.google.com/uc?id=1VhucZPDtSaSO1U15Ar3bjUm5crQHujDM" -O 02.mp4
+          gdown "https://drive.google.com/uc?id=1xvIN1sf6IZV0sKsWgzgLOf3Uo14hxiuZ" -O 03.mp4
+          gdown "https://drive.google.com/uc?id=1pzQdSE5cInpNn30oxxbOXBdPYPESckfE" -O 04.mp4
 
-      - name: Normalize videos
+      - name: Download Batch 2
+        if: inputs.batch == '2'
         run: |
-          for i in $(seq -w 1 10); do
-            ffmpeg -y -i "video${i}.mp4" \
-              -vf "scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,format=yuv420p" \
-              -r 30 \
-              -c:v libx264 \
-              -preset veryfast \
-              -b:v 4500k \
-              -maxrate 4500k \
-              -bufsize 9000k \
-              -g 60 \
-              -keyint_min 60 \
-              -sc_threshold 0 \
-              -c:a aac \
-              -b:a 128k \
-              -ar 44100 \
-              -ac 2 \
-              "fixed${i}.mp4"
-          done
+          gdown "https://drive.google.com/uc?id=1ktLzDCo8yTuXC1FN4CCv3ORFVKrQ-32L" -O 05.mp4
+          gdown "https://drive.google.com/uc?id=1TZALYEg2FCGjPojNG5jr5JW_OShvoWwX" -O 06.mp4
+          gdown "https://drive.google.com/uc?id=1aUEdDMoB6tmT8-jPy-bSJfFooWV1Pog0" -O 07.mp4
+
+      - name: Download Batch 3
+        if: inputs.batch == '3'
+        run: |
+          gdown "https://drive.google.com/uc?id=1wX8MYiBMVVrVzPPDThMsk4pPL4xFSnNO" -O 08.mp4
+          gdown "https://drive.google.com/uc?id=1DmdhPFhm2Gi5e-CVhuUbq48WI8wEFVbb" -O 09.mp4
+          gdown "https://drive.google.com/uc?id=1PeYA3MxFUw1eEQL4pFhzGsYTRAR95bvo" -O 10.mp4
 
       - name: Create playlist
         run: |
-          for i in $(seq -w 1 10); do
-            echo "file 'fixed${i}.mp4'" >> playlist.txt
+          for f in *.mp4; do
+            echo "file '$f'" >> playlist.txt
           done
 
-      - name: Start YouTube + Facebook Live
+      - name: Live
         env:
           YOUTUBE_STREAM_KEY: ${{ secrets.YOUTUBE_STREAM_KEY }}
           FACEBOOK_STREAM_KEY: ${{ secrets.FACEBOOK_STREAM_KEY }}
         run: |
           ffmpeg -re \
-            -f concat \
-            -safe 0 \
-            -i playlist.txt \
-            -map 0:v:0 \
-            -map 0:a:0 \
-            -c:v copy \
-            -c:a copy \
-            -f tee \
-            "[f=flv]rtmp://a.rtmp.youtube.com/live2/${YOUTUBE_STREAM_KEY}|[f=flv]rtmps://live-api-s.facebook.com:443/rtmp/${FACEBOOK_STREAM_KEY}"
+          -f concat -safe 0 -i playlist.txt \
+          -map 0:v:0 -map 0:a:0 \
+          -c:v libx264 -preset veryfast \
+          -r 30 -g 60 -keyint_min 60 -sc_threshold 0 \
+          -b:v 4500k -maxrate 4500k -bufsize 9000k \
+          -pix_fmt yuv420p \
+          -c:a aac -b:a 128k -ar 44100 -ac 2 \
+          -f tee \
+          "[f=flv]rtmp://a.rtmp.youtube.com/live2/${YOUTUBE_STREAM_KEY}|[f=flv]rtmps://live-api-s.facebook.com:443/rtmp/${FACEBOOK_STREAM_KEY}"
