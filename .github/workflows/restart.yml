@@ -1,4 +1,4 @@
-name: Auto Restart YouTube Live
+name: Auto Restart Batches
 
 on:
   workflow_run:
@@ -13,23 +13,28 @@ permissions:
 
 jobs:
   restart:
-    if: github.event.workflow_run.conclusion != 'cancelled'
+    if: github.event.workflow_run.conclusion == 'success'
 
     runs-on: ubuntu-latest
 
     steps:
-      - name: Wait before restart
-        run: sleep 20
+      - name: Find next batch
+        id: batch
+        run: |
+          BATCH="${{ github.event.workflow_run.head_branch }}"
 
-      - name: Start new YouTube Live
+          if [ "$BATCH" = "batch1" ]; then
+            echo "next=2" >> "$GITHUB_OUTPUT"
+          elif [ "$BATCH" = "batch2" ]; then
+            echo "next=3" >> "$GITHUB_OUTPUT"
+          else
+            echo "next=1" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Start next batch
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh api \
-            --method POST \
-            -H "Accept: application/vnd.github+json" \
-            "/repos/${{ github.repository }}/actions/workflows/live.yml/dispatches" \
-            -f ref=main
-
-      - name: Confirm
-        run: echo "New YouTube Live started."
+          gh workflow run live.yml \
+            --ref main \
+            -f batch=${{ steps.batch.outputs.next }}
