@@ -25,13 +25,6 @@ jobs:
           .venv/bin/gdown "https://drive.google.com/uc?id=1pzQdSE5cInpNn30oxxbOXBdPYPESckfE" -O 02.mp4
           .venv/bin/gdown "https://drive.google.com/uc?id=1ktLzDCo8yTuXC1FN4CCv3ORFVKrQ-32L" -O 03.mp4
 
-      - name: Check videos
-        run: |
-          ls -lh *.mp4
-          ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1 01.mp4
-          ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1 02.mp4
-          ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1 03.mp4
-
       - name: Create playlist
         run: |
           printf "file '01.mp4'\nfile '02.mp4'\nfile '03.mp4'\n" > playlist.txt
