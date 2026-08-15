@@ -1,0 +1,54 @@
+name: Live Batch 1
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  stream:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+
+    steps:
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg python3-pip
+          pip3 install gdown
+
+      - name: Download videos
+        run: |
+          gdown "https://drive.google.com/uc?id=1xvIN1sf6IZV0sKsWgzgLOf3Uo14hxiuZ" -O 01.mp4
+          gdown "https://drive.google.com/uc?id=1pzQdSE5cInpNn30oxxbOXBdPYPESckfE" -O 02.mp4
+          gdown "https://drive.google.com/uc?id=1ktLzDCo8yTuXC1FN4CCv3ORFVKrQ-32L" -O 03.mp4
+
+      - name: Create playlist
+        run: |
+          printf "file '01.mp4'\nfile '02.mp4'\nfile '03.mp4'\n" > playlist.txt
+
+      - name: Start YouTube + Facebook Live
+        env:
+          YOUTUBE_STREAM_KEY: ${{ secrets.YOUTUBE_STREAM_KEY }}
+          FACEBOOK_STREAM_KEY: ${{ secrets.FACEBOOK_STREAM_KEY }}
+        run: |
+          ffmpeg -re \
+            -f concat -safe 0 -i playlist.txt \
+            -map 0:v:0 -map 0:a:0 \
+            -c:v libx264 \
+            -preset veryfast \
+            -r 30 \
+            -g 60 \
+            -keyint_min 60 \
+            -sc_threshold 0 \
+            -b:v 4500k \
+            -maxrate 4500k \
+            -bufsize 9000k \
+            -pix_fmt yuv420p \
+            -c:a aac \
+            -b:a 128k \
+            -ar 44100 \
+            -ac 2 \
+            -f tee \
+            "[f=flv]rtmp://a.rtmp.youtube.com/live2/${YOUTUBE_STREAM_KEY}|[f=flv]rtmps://live-api-s.facebook.com:443/rtmp/${FACEBOOK_STREAM_KEY}"
