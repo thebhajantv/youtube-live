@@ -5,6 +5,7 @@ on:
 
 permissions:
   contents: read
+  actions: write
 
 jobs:
   stream:
@@ -15,7 +16,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          sudo apt-get update
+          sudo apt-get update -o Acquire::Retries=3
           sudo apt-get install -y ffmpeg
           python3 -m venv .venv
           .venv/bin/python -m pip install --upgrade pip
@@ -24,13 +25,14 @@ jobs:
 
       - name: Download videos
         run: |
-          .venv/bin/gdown "https://drive.google.com/uc?id=1xvIN1sf6IZV0sKsWgzgLOf3Uo14hxiuZ" -O 01.mp4
-          .venv/bin/gdown "https://drive.google.com/uc?id=1pzQdSE5cInpNn30oxxbOXBdPYPESckfE" -O 02.mp4
-          .venv/bin/gdown "https://drive.google.com/uc?id=1ktLzDCo8yTuXC1FN4CCv3ORFVKrQ-32L" -O 03.mp4
+          .venv/bin/gdown "https://drive.google.com/uc?id=1PeYA3MxFUw1eEQL4pFhzGsYTRAR95bvo" -O 01.mp4
+          .venv/bin/gdown "https://drive.google.com/uc?id=1Ua4lhQgIo65Eg6rMqE64p8Vizuy2n5ky" -O 02.mp4
+          .venv/bin/gdown "https://drive.google.com/uc?id=1DmdhPFhm2Gi5e-CVhuUbq48WI8wEFVbb" -O 03.mp4
+          .venv/bin/gdown "https://drive.google.com/uc?id=1VhucZPDtSaSO1U15Ar3bjUm5crQHujDM" -O 04.mp4
 
       - name: Create playlist
         run: |
-          printf "file '01.mp4'\nfile '02.mp4'\nfile '03.mp4'\n" > playlist.txt
+          printf "file '01.mp4'\nfile '02.mp4'\nfile '03.mp4'\nfile '04.mp4'\n" > playlist.txt
           cat playlist.txt
 
       - name: Start YouTube + Facebook Live
@@ -62,3 +64,12 @@ jobs:
             -af "aresample=async=1:first_pts=0" \
             -f tee \
             "[f=flv]rtmp://a.rtmp.youtube.com/live2/${YOUTUBE_STREAM_KEY}|[f=flv]rtmps://live-api-s.facebook.com:443/rtmp/${FACEBOOK_STREAM_KEY}"
+
+      - name: Start Batch 2
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh workflow run batch2.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref main
