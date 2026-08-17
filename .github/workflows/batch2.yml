@@ -5,7 +5,6 @@ on:
 
 permissions:
   contents: read
-  actions: write
 
 jobs:
   stream:
@@ -16,22 +15,31 @@ jobs:
 
       - name: Install dependencies
         run: |
-          sudo apt-get update -o Acquire::Retries=3
-          sudo apt-get install -y ffmpeg
-          python3 -m venv .venv
-          .venv/bin/python -m pip install --upgrade pip
-          .venv/bin/python -m pip install gdown
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg python3-pip
+          pip3 install gdown
           ffmpeg -version
 
       - name: Download videos
         run: |
-          .venv/bin/gdown "https://drive.google.com/uc?id=1wX8MYiBMVVrVzPPDThMsk4pPL4xFSnNO" -O 05.mp4
-          .venv/bin/gdown "https://drive.google.com/uc?id=1aUEdDMoB6tmT8-jPy-bSJfFooWV1Pog0" -O 06.mp4
-          .venv/bin/gdown "https://drive.google.com/uc?id=1TZALYEg2FCGjPojNG5jr5JW_OShvoWwX" -O 07.mp4
+          gdown "https://drive.google.com/uc?id=1TZALYEg2FCGjPojNG5jr5JW_OShvoWwX" -O 01.mp4
+          gdown "https://drive.google.com/uc?id=1aUEdDMoB6tmT8-jPy-bSJfFooWV1Pog0" -O 02.mp4
+          gdown "https://drive.google.com/uc?id=1wX8MYiBMVVrVzPPDThMsk4pPL4xFSnNO" -O 03.mp4
+
+      - name: Check videos
+        run: |
+          ffprobe -v error -show_entries format=duration \
+          -of default=noprint_wrappers=1 01.mp4
+
+          ffprobe -v error -show_entries format=duration \
+          -of default=noprint_wrappers=1 02.mp4
+
+          ffprobe -v error -show_entries format=duration \
+          -of default=noprint_wrappers=1 03.mp4
 
       - name: Create playlist
         run: |
-          printf "file '05.mp4'\nfile '06.mp4'\nfile '07.mp4'\n" > playlist.txt
+          printf "file '01.mp4'\nfile '02.mp4'\nfile '03.mp4'\n" > playlist.txt
           cat playlist.txt
 
       - name: Start YouTube + Facebook Live
@@ -41,6 +49,7 @@ jobs:
         run: |
           ffmpeg -hide_banner -loglevel info \
             -re \
+            -stream_loop -1 \
             -f concat -safe 0 -i playlist.txt \
             -map 0:v:0 \
             -map 0:a:0 \
@@ -63,12 +72,3 @@ jobs:
             -af "aresample=async=1:first_pts=0" \
             -f tee \
             "[f=flv]rtmp://a.rtmp.youtube.com/live2/${YOUTUBE_STREAM_KEY}|[f=flv]rtmps://live-api-s.facebook.com:443/rtmp/${FACEBOOK_STREAM_KEY}"
-
-      - name: Start Batch 3
-        if: success()
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh workflow run batch3.yml \
-            --repo "$GITHUB_REPOSITORY" \
-            --ref main
