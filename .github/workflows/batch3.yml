@@ -54,7 +54,7 @@ jobs:
           FACEBOOK_STREAM_KEY: ${{ secrets.FACEBOOK_STREAM_KEY }}
 
         run: |
-          set -o pipefail
+          set -e
 
           ffmpeg \
             -hide_banner \
@@ -84,4 +84,4 @@ jobs:
             -ac 2 \
             -af "aresample=async=1:first_pts=0" \
             -f tee \
-            "[f=flv:onfail=ignore]rtmp://a.rtmp.youtube.com/live2/${YOUTUBE_STREAM_KEY}|[f=flv:onfail=ignore]rtmps://live-api-s.facebook.com:443/rtmp/${FACEBOOK_STREAM_KEY}"
+            "[f=flv]rtmp://a.rtmp.youtube.com/live2/${YOUTUBE_STREAM_KEY}|[f=flv]rtmps://live-api-s.facebook.com:443/rtmp/${FACEBOOK_STREAM_KEY}"
