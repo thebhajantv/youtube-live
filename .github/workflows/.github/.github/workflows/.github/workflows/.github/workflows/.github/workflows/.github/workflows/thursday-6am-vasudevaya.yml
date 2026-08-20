@@ -1,0 +1,59 @@
+name: Live - Om Namo Bhagavate Vasudevaya - Thursday 6AM
+
+on:
+  schedule:
+    - cron: '30 0 * * 4'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  stream:
+    runs-on: ubuntu-latest
+    timeout-minutes: 190
+
+    steps:
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -o Acquire::Retries=3
+          sudo apt-get install -y ffmpeg
+          python3 -m venv .venv
+          .venv/bin/python -m pip install --upgrade pip
+          .venv/bin/python -m pip install gdown
+
+      - name: Download video
+        run: |
+          .venv/bin/gdown "https://drive.google.com/uc?id=1PeYA3MxFUw1eEQL4pFhzGsYTRAR95bvo" -O video.mp4
+
+      - name: Start YouTube + Facebook Live
+        env:
+          YOUTUBE_STREAM_KEY: ${{ secrets.YOUTUBE_STREAM_KEY }}
+          FACEBOOK_STREAM_KEY: ${{ secrets.FACEBOOK_STREAM_KEY }}
+        run: |
+          ffmpeg -hide_banner -loglevel info \
+            -stream_loop -1 \
+            -re \
+            -i video.mp4 \
+            -t 03:00:00 \
+            -map 0:v:0 \
+            -map 0:a:0 \
+            -vf "scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,fps=30,format=yuv420p" \
+            -c:v libx264 \
+            -preset veryfast \
+            -profile:v main \
+            -level 4.0 \
+            -b:v 4500k \
+            -maxrate 4500k \
+            -bufsize 9000k \
+            -r 30 \
+            -g 60 \
+            -keyint_min 60 \
+            -sc_threshold 0 \
+            -c:a aac \
+            -b:a 128k \
+            -ar 44100 \
+            -ac 2 \
+            -af "aresample=async=1:first_pts=0" \
+            -f tee \
+            "[f=flv]rtmp://a.rtmp.youtube.com/live2/${YOUTUBE_STREAM_KEY}|[f=flv]rtmps://live-api-s.facebook.com:443/rtmp/${FACEBOOK_STREAM_KEY}"
