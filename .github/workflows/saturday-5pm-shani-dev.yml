@@ -1,9 +1,10 @@
-name: Live - Shani Dev Mantra - Saturday 5AM
+name: Live - Shani Dev Mantra - Saturday 5PM
 
 on:
   schedule:
-    # GitHub schedule: start runner 10 minutes before 5:00 AM IST
-    - cron: '20 23 * * 5'
+    # Every Saturday at 5:00 PM IST
+    # GitHub starts around 10 minutes earlier
+    - cron: '50 11 * * 6'
   workflow_dispatch:
 
 permissions:
@@ -27,15 +28,15 @@ jobs:
         run: |
           .venv/bin/gdown "https://drive.google.com/uc?id=1wX8MYiBMVVrVzPPDThMsk4pPL4xFSnNO" -O video.mp4
 
-      - name: Wait until exactly 5:00 AM IST
+      - name: Wait until exactly 5:00 PM IST
         run: |
-          TARGET="05:00:00"
+          TARGET="17:00:00"
 
           while true; do
             CURRENT=$(TZ=Asia/Kolkata date +"%H:%M:%S")
 
             if [[ "$CURRENT" == "$TARGET" ]]; then
-              echo "5:00 AM IST reached. Starting live..."
+              echo "5:00 PM IST reached. Starting live..."
               break
             fi
 
