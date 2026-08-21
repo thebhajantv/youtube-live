@@ -1,8 +1,9 @@
-name: Live - Shani Dev Mantra - Saturday 5PM
+name: Live - Shani Dev Mantra - Saturday 5AM
 
 on:
   schedule:
-    - cron: '30 11 * * 6'
+    # Every Saturday at 5:00 AM IST
+    - cron: '30 23 * * 5'
   workflow_dispatch:
 
 permissions:
