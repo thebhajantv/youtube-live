@@ -2,6 +2,8 @@ name: Live - Karagre Vasate Lakshmi - Sunday 6AM
 
 on:
   schedule:
+    # Every Sunday at 6:00 AM IST
+    # 6:00 AM IST = 00:30 UTC
     - cron: '30 0 * * 0'
   workflow_dispatch:
 
@@ -56,4 +58,4 @@ jobs:
             -ac 2 \
             -af "aresample=async=1:first_pts=0" \
             -f tee \
-            "[f=flv]rtmp://a.rtmp.youtube.com/live2/${YOUTUBE_STREAM_KEY}|[f=flv]rtmps://live-api-s.facebook.com:443/rtmp/${FACEBOOK_STREAM_KEY}"
+            "[f=flv]rtmp://a.rtmp.youtube.com/live2/${YOUTUBE_STREAM_KEY}|[f=flv]rtmps://live-api.facebook.com:443/rtmp/${FACEBOOK_STREAM_KEY}"
