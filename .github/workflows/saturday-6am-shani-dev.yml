@@ -1,110 +1,27 @@
-name: Live - Shani Dev Mantra - Saturday 5AM
-
-on:
-  schedule:
-    - cron: '20 23 * * 5'
-  workflow_dispatch:
-
-permissions:
-  contents: read
-
-jobs:
-  stream:
-    runs-on: ubuntu-latest
-    timeout-minutes: 190
-
-    steps:
-      - name: Install dependencies
-        run: |
-          sudo apt-get update -o Acquire::Retries=3
-          sudo apt-get install -y ffmpeg
-          python3 -m venv .venv
-          .venv/bin/python -m pip install --upgrade pip
-          .venv/bin/python -m pip install gdown
-
-      - name: Download video
-        run: |
-          .venv/bin/gdown "https://drive.google.com/uc?id=1wX8MYiBMVVrVzPPDThMsk4pPL4xFSnNO" -O video.mp4
-
-          if [ ! -s video.mp4 ]; then
-            echo "ERROR: video.mp4 download failed or file is empty."
-            exit 1
-          fi
-
-          echo "Video downloaded successfully."
-          ls -lh video.mp4
-
-      - name: Check stream keys
+      - name: Start YouTube Live
         env:
           YOUTUBE_STREAM_KEY: ${{ secrets.YOUTUBE_STREAM_KEY }}
-          FACEBOOK_STREAM_KEY: ${{ secrets.FACEBOOK_STREAM_KEY }}
         run: |
+          set -e
+
           if [ -z "$YOUTUBE_STREAM_KEY" ]; then
-            echo "ERROR: YOUTUBE_STREAM_KEY secret is EMPTY or missing."
+            echo "ERROR: YouTube Stream Key is missing."
             exit 1
           fi
 
-          if [ -z "$FACEBOOK_STREAM_KEY" ]; then
-            echo "ERROR: FACEBOOK_STREAM_KEY secret is EMPTY or missing."
-            exit 1
-          fi
-
-          echo "YouTube stream key: OK"
-          echo "Facebook stream key: OK"
-
-      - name: Wait until 5:00 AM IST
-        run: |
-          TARGET_SECONDS=$((5 * 3600))
-
-          while true; do
-            CURRENT_SECONDS=$(TZ=Asia/Kolkata date +%s)
-            CURRENT_TIME=$(TZ=Asia/Kolkata date +"%H:%M:%S")
-            CURRENT_DAY=$(TZ=Asia/Kolkata date +"%u")
-
-            echo "Current IST: $CURRENT_TIME"
-
-            # Saturday only
-            if [ "$CURRENT_DAY" != "6" ]; then
-              echo "Not Saturday in IST. Exiting."
-              exit 1
-            fi
-
-            HOUR=$(TZ=Asia/Kolkata date +"%H")
-            MINUTE=$(TZ=Asia/Kolkata date +"%M")
-
-            if [ "$HOUR" -ge 5 ]; then
-              echo "5:00 AM IST has already arrived. Starting live now."
-              break
-            fi
-
-            sleep 5
-          done
-
-      - name: Start YouTube + Facebook Live
-        env:
-          YOUTUBE_STREAM_KEY: ${{ secrets.YOUTUBE_STREAM_KEY }}
-          FACEBOOK_STREAM_KEY: ${{ secrets.FACEBOOK_STREAM_KEY }}
-        run: |
-          set -o pipefail
-
-          YOUTUBE_URL="rtmp://a.rtmp.youtube.com/live2/${YOUTUBE_STREAM_KEY}"
-          FACEBOOK_URL="rtmps://live-api-s.facebook.com:443/rtmp/${FACEBOOK_STREAM_KEY}"
-
-          echo "Starting FFmpeg live stream..."
-          echo "Target: YouTube + Facebook"
-          echo "Start time IST: $(TZ=Asia/Kolkata date '+%Y-%m-%d %H:%M:%S')"
+          echo "Starting YouTube Live..."
+          echo "IST time: $(TZ=Asia/Kolkata date '+%Y-%m-%d %H:%M:%S')"
 
           ffmpeg \
             -hide_banner \
             -loglevel info \
-            -stats \
-            -stream_loop -1 \
             -re \
+            -stream_loop -1 \
             -i video.mp4 \
-            -t 03:00:00 \
+            -t 00:10:00 \
             -map 0:v:0 \
             -map 0:a:0 \
-            -vf "scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,fps=30,format=yuv420p" \
+            -vf "scale=1280:720:force_original_aspect_ratio:decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,fps=30,format=yuv420p" \
             -c:v libx264 \
             -preset veryfast \
             -profile:v main \
@@ -121,16 +38,5 @@ jobs:
             -ar 44100 \
             -ac 2 \
             -af "aresample=async=1:first_pts=0" \
-            -f tee \
-            "[f=flv:onfail=abort]${YOUTUBE_URL}|[f=flv:onfail=abort]${FACEBOOK_URL}"
-
-          EXIT_CODE=$?
-
-          echo "FFmpeg exited with code: $EXIT_CODE"
-
-          if [ "$EXIT_CODE" -ne 0 ]; then
-            echo "ERROR: Live stream failed."
-            exit "$EXIT_CODE"
-          fi
-
-          echo "Live stream finished successfully."
+            -f flv \
+            "rtmp://a.rtmp.youtube.com/live2/${YOUTUBE_STREAM_KEY}"
