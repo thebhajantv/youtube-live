@@ -1,8 +1,10 @@
-name: Live - Maha Mrityunjaya Mantra - Monday 6AM
+name: Live - Maha Mrityunjaya Mantra - Monday 4AM
 
 on:
   schedule:
-    - cron: '30 0 * * 1'
+    # Every Monday at 4:00 AM IST
+    # 4:00 AM IST = Sunday 22:30 UTC
+    - cron: '30 22 * * 0'
   workflow_dispatch:
 
 permissions:
@@ -21,6 +23,7 @@ jobs:
           python3 -m venv .venv
           .venv/bin/python -m pip install --upgrade pip
           .venv/bin/python -m pip install gdown
+          ffmpeg -version
 
       - name: Download video
         run: |
@@ -56,4 +59,4 @@ jobs:
             -ac 2 \
             -af "aresample=async=1:first_pts=0" \
             -f tee \
-            "[f=flv]rtmp://a.rtmp.youtube.com/live2/${YOUTUBE_STREAM_KEY}|[f=flv]rtmps://live-api-s.facebook.com:443/rtmp/${FACEBOOK_STREAM_KEY}"
+            "[f=flv]rtmp://a.rtmp.youtube.com/live2/${YOUTUBE_STREAM_KEY}|[f=flv]rtmps://live-api.facebook.com:443/rtmp/${FACEBOOK_STREAM_KEY}"
