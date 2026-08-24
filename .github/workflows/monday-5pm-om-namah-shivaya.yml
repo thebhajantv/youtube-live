@@ -1,8 +1,6 @@
 name: Live - Om Namah Shivaya Mantra - Monday 5PM
 
 on:
-  schedule:
-    - cron: '30 11 * * 1'
   workflow_dispatch:
 
 permissions:
@@ -26,7 +24,7 @@ jobs:
 
       - name: Download video
         run: |
-          .venv/bin/gdown "https://drive.google.com/uc?id=1DmdhPFhm2Gi5e-CVhuUbq48WI8wEFVbb" -O video.mp4
+          .venv/bin/python -m gdown "https://drive.google.com/uc?id=1DmdhPFhm2Gi5e-CVhuUbq48WI8wEFVbb" -O video.mp4
           ls -lh video.mp4
 
       - name: Check Stream Keys
