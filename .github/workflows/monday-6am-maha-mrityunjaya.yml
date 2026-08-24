@@ -80,4 +80,4 @@ jobs:
             -ac 2 \
             -af "aresample=async=1:first_pts=0" \
             -f tee \
-            "[f=flv]rtmp://a.rtmp.youtube.com/live2/${YOUTUBE_STREAM_KEY}|[f=flv]rtmps://live-api.s.facebook.com:443/rtmp/${FACEBOOK_STREAM_KEY}"
+            "[f=flv]rtmp://a.rtmp.youtube.com/live2/${YOUTUBE_STREAM_KEY}|[f=flv]rtmps://live-api.facebook.com:443/rtmp/${FACEBOOK_STREAM_KEY}"
