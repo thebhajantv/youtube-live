@@ -1,4 +1,4 @@
-name: TEST - Maha Mrityunjaya Mantra - YouTube + Facebook
+name: MANUAL TEST - Maha Mrityunjaya Mantra - YouTube + Facebook
 
 on:
   workflow_dispatch:
@@ -9,7 +9,7 @@ permissions:
 jobs:
   stream:
     runs-on: ubuntu-latest
-    timeout-minutes: 190
+    timeout-minutes: 20
 
     steps:
 
@@ -50,11 +50,16 @@ jobs:
           YOUTUBE_STREAM_KEY: ${{ secrets.YOUTUBE_STREAM_KEY }}
           FACEBOOK_STREAM_KEY: ${{ secrets.FACEBOOK_STREAM_KEY }}
         run: |
-          ffmpeg -hide_banner -loglevel info \
-            -stream_loop -1 \
+          echo "Starting YouTube + Facebook Live..."
+          echo "IST time: $(TZ=Asia/Kolkata date '+%Y-%m-%d %H:%M:%S')"
+
+          ffmpeg \
+            -hide_banner \
+            -loglevel info \
             -re \
+            -stream_loop -1 \
             -i video.mp4 \
-            -t 03:00:00 \
+            -t 00:10:00 \
             -map 0:v:0 \
             -map 0:a:0 \
             -vf "scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,fps=30,format=yuv420p" \
