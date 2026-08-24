@@ -1,10 +1,6 @@
-name: Live - Maha Mrityunjaya Mantra - Monday 4AM
+name: TEST - Maha Mrityunjaya Mantra - YouTube + Facebook
 
 on:
-  schedule:
-    # Every Monday at 4:00 AM IST
-    # 4:00 AM IST = Sunday 22:30 UTC
-    - cron: '30 22 * * 0'
   workflow_dispatch:
 
 permissions:
@@ -16,6 +12,7 @@ jobs:
     timeout-minutes: 190
 
     steps:
+
       - name: Install dependencies
         run: |
           sudo apt-get update -o Acquire::Retries=3
@@ -28,6 +25,25 @@ jobs:
       - name: Download video
         run: |
           .venv/bin/gdown "https://drive.google.com/uc?id=1Ua4lhQgIo65Eg6rMqE64p8Vizuy2n5ky" -O video.mp4
+          ls -lh video.mp4
+
+      - name: Check Stream Keys
+        env:
+          YOUTUBE_STREAM_KEY: ${{ secrets.YOUTUBE_STREAM_KEY }}
+          FACEBOOK_STREAM_KEY: ${{ secrets.FACEBOOK_STREAM_KEY }}
+        run: |
+          if [ -z "$YOUTUBE_STREAM_KEY" ]; then
+            echo "ERROR: YouTube Stream Key is EMPTY"
+            exit 1
+          fi
+
+          if [ -z "$FACEBOOK_STREAM_KEY" ]; then
+            echo "ERROR: Facebook Stream Key is EMPTY"
+            exit 1
+          fi
+
+          echo "YouTube Stream Key: FOUND"
+          echo "Facebook Stream Key: FOUND"
 
       - name: Start YouTube + Facebook Live
         env:
@@ -59,4 +75,4 @@ jobs:
             -ac 2 \
             -af "aresample=async=1:first_pts=0" \
             -f tee \
-            "[f=flv]rtmp://a.rtmp.youtube.com/live2/${YOUTUBE_STREAM_KEY}|[f=flv]rtmps://live-api.facebook.com:443/rtmp/${FACEBOOK_STREAM_KEY}"
+            "[f=flv]rtmp://a.rtmp.youtube.com/live2/${YOUTUBE_STREAM_KEY}|[f=flv]rtmps://live-api.s.facebook.com:443/rtmp/${FACEBOOK_STREAM_KEY}"
