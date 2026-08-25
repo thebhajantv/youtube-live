@@ -1,4 +1,4 @@
-name: Live - Hanuman Beej Mantra - Tuesday 6AM
+name: MANUAL LIVE TEST - Hanuman Beej Mantra - YouTube + Facebook
 
 on:
   workflow_dispatch:
@@ -13,34 +13,39 @@ jobs:
 
     steps:
 
-      - name: Install dependencies
+      - name: Install FFmpeg and Gdown
         run: |
           sudo apt-get update -o Acquire::Retries=3
-          sudo apt-get install -y ffmpeg
-          python3 -m venv .venv
-          .venv/bin/python -m pip install --upgrade pip
-          .venv/bin/python -m pip install gdown
+          sudo apt-get install -y ffmpeg python3-pip
+          python3 -m pip install --upgrade gdown
           ffmpeg -version
 
-      - name: Download video
+      - name: Download Hanuman Beej Mantra
         run: |
-          .venv/bin/python -m gdown "https://drive.google.com/uc?id=1TZALYEg2FCGjPojNG5jr5JW_OShvoWwX" -O video.mp4
+          gdown "https://drive.google.com/uc?id=1TZALYEg2FCGjPojNG5jr5JW_OShvoWwX" -O video.mp4
           ls -lh video.mp4
+
+      - name: Check Video
+        run: |
+          ffprobe -v error \
+            -show_entries format=duration \
+            -of default=noprint_wrappers=1 \
+            video.mp4
 
       - name: Check Stream Keys
         env:
           YOUTUBE_STREAM_KEY: ${{ secrets.YOUTUBE_STREAM_KEY }}
           FACEBOOK_STREAM_KEY: ${{ secrets.FACEBOOK_STREAM_KEY }}
         run: |
-          if [ -z "$YOUTUBE_STREAM_KEY" ]; then
-            echo "ERROR: YouTube Stream Key is EMPTY"
+          test -n "$YOUTUBE_STREAM_KEY" || {
+            echo "ERROR: YOUTUBE_STREAM_KEY is empty"
             exit 1
-          fi
+          }
 
-          if [ -z "$FACEBOOK_STREAM_KEY" ]; then
-            echo "ERROR: Facebook Stream Key is EMPTY"
+          test -n "$FACEBOOK_STREAM_KEY" || {
+            echo "ERROR: FACEBOOK_STREAM_KEY is empty"
             exit 1
-          fi
+          }
 
           echo "YouTube Stream Key: FOUND"
           echo "Facebook Stream Key: FOUND"
@@ -50,8 +55,10 @@ jobs:
           YOUTUBE_STREAM_KEY: ${{ secrets.YOUTUBE_STREAM_KEY }}
           FACEBOOK_STREAM_KEY: ${{ secrets.FACEBOOK_STREAM_KEY }}
         run: |
-          echo "Starting YouTube + Facebook Live..."
-          echo "IST time: $(TZ=Asia/Kolkata date '+%Y-%m-%d %H:%M:%S')"
+          echo "======================================"
+          echo "STARTING YOUTUBE + FACEBOOK LIVE"
+          echo "======================================"
+          echo "IST: $(TZ=Asia/Kolkata date '+%Y-%m-%d %H:%M:%S')"
 
           ffmpeg \
             -hide_banner \
@@ -59,7 +66,6 @@ jobs:
             -re \
             -stream_loop -1 \
             -i video.mp4 \
-            -t 03:00:00 \
             -map 0:v:0 \
             -map 0:a:0 \
             -vf "scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,fps=30,format=yuv420p" \
@@ -67,6 +73,7 @@ jobs:
             -preset veryfast \
             -profile:v main \
             -level 4.0 \
+            -pix_fmt yuv420p \
             -b:v 4500k \
             -maxrate 4500k \
             -bufsize 9000k \
@@ -79,5 +86,6 @@ jobs:
             -ar 44100 \
             -ac 2 \
             -af "aresample=async=1:first_pts=0" \
+            -flvflags no_duration_filesize \
             -f tee \
-            "[f=flv]rtmp://a.rtmp.youtube.com/live2/${YOUTUBE_STREAM_KEY}|[f=flv]rtmps://live-api.facebook.com:443/rtmp/${FACEBOOK_STREAM_KEY}"
+            "[f=flv:onfail=ignore]rtmp://a.rtmp.youtube.com/live2/${YOUTUBE_STREAM_KEY}|[f=flv:onfail=ignore]rtmps://live-api.facebook.com:443/rtmp/${FACEBOOK_STREAM_KEY}"
